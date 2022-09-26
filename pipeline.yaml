@@ -1,0 +1,161 @@
+trigger:
+  - trunk
+
+parameters:
+  - name: deploy
+    # List of build reasons that will trigger a deployment.
+    # Branch restrictions should be applied via a Branch Control check on the environment.
+    # See https://docs.microsoft.com/en-us/azure/devops/pipelines/process/approvals?view=azure-devops&tabs=check-pass#branch-control
+    type: object
+    default:
+      - Manual
+      - IndividualCI # PR merged
+  - name: update
+    # List of build reasons that will trigger a dependency update.
+    type: object
+    default:
+      - Schedule
+
+pool:
+  vmImage: ubuntu-20.04
+
+resources:
+  repositories:
+    - repository: pipelines
+      type: git
+      name: architecture/pipelines
+      ref: refs/tags/1.2.6
+
+schedules:
+  - cron: '0 2 * * *' # UTC
+    displayName: Nightly build
+    branches:
+      include:
+        - trunk
+    always: true
+
+variables:
+  - group: common
+  - ${{ if containsValue(parameters.deploy, variables['Build.Reason']) }}:
+      - name: Major
+        value: '1'
+      - name: Minor
+        value: '8'
+      - name: Patch
+        value: $[counter(format('{0}.{1}', variables['Major'], variables['Minor']), 0)]
+      - name: Version
+        value: $[format('{0}.{1}.{2}', variables['Major'], variables['Minor'], variables['Patch'])]
+  - ${{ if not(containsValue(parameters.deploy, variables['Build.Reason'])) }}:
+      - name: Date
+        value: $[format('{0:yyyyMMdd}', pipeline.startTime)]
+      - name: Run
+        value: $[counter(variables['Date'], 1)]
+      - name: Version
+        value: $[format('{0}.{1}', variables['Date'], variables['Run'])]
+
+name: $[variables['Version']]
+
+stages:
+  - ${{ if containsValue(parameters.deploy, variables['Build.Reason']) }}:
+      - template: git/tag.yaml@pipelines
+  - stage: BuildJavaPackage
+    dependsOn: [ ]
+    jobs:
+      - job: Build
+        steps:
+          - template: maven/authenticate.yaml@pipelines
+          - template: maven/cache.yaml@pipelines
+          - template: maven/build.yaml@pipelines
+            ${{ if containsValue(parameters.deploy, variables['Build.Reason']) }}:
+              parameters:
+                pom: packages/java/pom.xml
+                goals: deploy
+                options: >-
+                  -P release
+                  -D revision=$(Version)
+                  -D dependency-check.skip=$(skipDependencyCheck)
+            ${{ if not(containsValue(parameters.deploy, variables['Build.Reason'])) }}:
+              parameters:
+                pom: packages/java/pom.xml
+                goals: verify
+                options: >-
+                  -D revision=$(Version)-SNAPSHOT
+                  -D dependency-check.skip=$(skipDependencyCheck)
+          - ${{ if containsValue(parameters.update, variables['Build.Reason']) }}:
+              - template: dependabot/update.yaml@pipelines
+                parameters:
+                  directory: /packages/java
+                  packageManager: maven
+
+  - stage: BuildTypescriptPackage
+    dependsOn: [ ]
+    jobs:
+      - job: Build
+        steps:
+          - checkout: self
+            persistCredentials: true
+          - task: NodeTool@0
+            inputs:
+              versionSpec: '16.x'
+            displayName: 'Install Node.js'
+          - ${{ if containsValue(parameters.deploy, variables['Build.Reason']) }}:
+              - task: CmdLine@2
+                displayName: 'Set version'
+                inputs:
+                  workingDirectory: packages/typescript
+                  script: npm version --no-git-tag-version --force $(Version)
+          - task: Npm@1
+            displayName: 'Install dependencies'
+            inputs:
+              command: install
+              workingDir: packages/typescript
+              customRegistry: 'useNpmrc'
+          - task: Npm@1
+            displayName: 'Build package'
+            inputs:
+              command: custom
+              customCommand: run build
+              workingDir: packages/typescript
+              customRegistry: useNpmrc
+          - ${{ if containsValue(parameters.deploy, variables['Build.Reason']) }}:
+              - task: Npm@1
+                displayName: 'Publish package'
+                inputs:
+                  command: publish
+                  workingDir: packages/typescript/dist
+                  publishRegistry: useFeed
+                  publishFeed: gropyus
+          - ${{ if containsValue(parameters.update, variables['Build.Reason']) }}:
+              - template: dependabot/update.yaml@pipelines
+                parameters:
+                  directory: /packages/typescript
+                  packageManager: npm_and_yarn
+
+  - stage: BuildKotlinPackage
+    dependsOn: [ ]
+    jobs:
+      - job: Build
+        steps:
+          - template: maven/cache.yaml@pipelines
+          - template: maven/authenticate.yaml@pipelines
+          - template: maven/build.yaml@pipelines
+            ${{ if containsValue(parameters.deploy, variables['Build.Reason']) }}:
+              parameters:
+                pom: packages/kotlin/pom.xml
+                goals: deploy
+                options: >-
+                  -P release
+                  -D revision=$(Version)
+                  -D dependency-check.skip=$(skipDependencyCheck)
+            ${{ if not(containsValue(parameters.deploy, variables['Build.Reason'])) }}:
+              parameters:
+                pom: packages/kotlin/pom.xml
+                goals: verify
+                options: >-
+                  -D revision=$(Version)-SNAPSHOT
+                  -D dependency-check.skip=$(skipDependencyCheck)
+          - ${{ if containsValue(parameters.update, variables['Build.Reason']) }}:
+              - template: dependabot/update.yaml@pipelines
+                parameters:
+                  directory: /packages/kotlin
+                  packageManager: maven
