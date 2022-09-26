@@ -1,11 +1,7 @@
 {
-  "name": "@gropyus/digital-factory-grpc",
+  "name": "moodn-grpc-api",
   "version": "1.0.0",
-  "description": "Digital Factory gRPC for TypeScript",
-  "repository": {
-    "type": "git",
-    "url": "https://dev.azure.com/gropyus/mes/_git/digital-factory-grpc"
-  },
+  "description": "moodn gRPC for TypeScript",
   "engines": {
     "node": "16.x"
   },
@@ -13,17 +9,14 @@
     "clean": "rm -rf ./src && rm -rf ./dist",
     "build": "npm run clean && mkdir -p ./src && ./bin/generate.sh && tsc && cp package.json dist/package.json"
   },
-  "author": "GROPYUS",
-  "license": "UNLICENSED",
+  "author": "MOODN",
+  "license": "MIT",
   "devDependencies": {
-    "@grpc/grpc-js": "^1.6.12",
+    "@grpc/grpc-js": "^1.7.1",
     "google-proto-files": "^3.0.2",
     "google-protobuf": "^3.21.0",
     "grpc-tools": "^1.11.2",
     "ts-proto": "^1.125.0",
     "typescript": "^4.8.3"
-  },
-  "peerDependencies": {
-    "@grpc/grpc-js": "^1.6.12"
   }
 }

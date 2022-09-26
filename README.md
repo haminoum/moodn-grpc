@@ -1,6 +1,6 @@
-# Digital Factory gRPC API Specification
+# Moodn gRPC API Specification
 
-This repository contains the gRPC specifications (proto files) of all APIs that are available in the digital factory.
+This repository contains the gRPC specifications (proto files) of all APIs that are available in the moodn factory.
 
 Furthermore, it provides build pipelines to generate client and server code for the programming languages that are used in the realm.
 The different libraries will be stored in DevOps Artifacts and can be pulled into the services, that actually implement or use parts of the API.

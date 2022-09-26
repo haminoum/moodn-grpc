@@ -124,7 +124,7 @@ stages:
                   command: publish
                   workingDir: packages/typescript/dist
                   publishRegistry: useFeed
-                  publishFeed: gropyus
+                  publishFeed: moodn
           - ${{ if containsValue(parameters.update, variables['Build.Reason']) }}:
               - template: dependabot/update.yaml@pipelines
                 parameters:

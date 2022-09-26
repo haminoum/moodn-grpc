@@ -1,0 +1,37 @@
+syntax = "proto3";
+option optimize_for = CODE_SIZE;
+option java_multiple_files = true;
+
+package com.hero.grpc;
+
+import "google/protobuf/timestamp.proto";
+
+// The request message containing the user's id.
+message MoodRequest {
+
+  // Unique identifier of a user
+  string user_id = 1;
+}
+
+message Mood {
+  // Type of a mood
+  MoodType type = 1;
+  // Time when mood was created
+  google.protobuf.Timestamp created_at = 2;
+}
+
+
+enum MoodType {
+  // Happy mood
+  HAPPY = 0;
+  // Neutral mood
+  NEUTRAL = 1;
+  // Sad mood
+  SAD = 2;
+}
+// Mood service definition
+service MoodService {
+  // Obtains a stream of moods for a user
+  // Throws NOT_FOUND if user doesn't exist
+  rpc GetMoods(MoodRequest) returns (stream Mood);
+}
