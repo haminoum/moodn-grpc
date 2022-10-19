@@ -11,9 +11,6 @@
     <name>Moodn gRPC API Specification</name>
 
     <properties>
-        <!--        <java.version>11</java.version>-->
-
-
         <injekt-core.version>1.16.1</injekt-core.version>
         <rxkotlin.version>2.3.0</rxkotlin.version>
         <grpc.version>1.46.0</grpc.version>
@@ -215,6 +212,17 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <to>
+                        <image>408382269111.dkr.ecr.eu-central-1.amazonaws.com/moodin-grpc</image>
+                    </to>
+
+                </configuration>
             </plugin>
         </plugins>
     </build>
